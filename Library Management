@@ -1,0 +1,373 @@
+import java.util.*;
+import java.time.*;
+import java.io.*;
+
+/**
+ * Library Management System - Final Year Project
+ * This is a console-based application for managing a library.
+ * It allows adding books, issuing books, returning books, and generating reports.
+ * I've tried to make it efficient with proper use of data structures.
+ */
+class Book {
+    private int id;
+    private String title;
+    private String author;
+    private boolean isAvailable;
+    private String category;
+
+    public Book(int id, String title, String author, String category) {
+        this.id = id;
+        this.title = title;
+        this.author = author;
+        this.category = category;
+        this.isAvailable = true;
+    }
+
+    // Getters and setters
+    public int getId() { return id; }
+    public String getTitle() { return title; }
+    public String getAuthor() { return author; }
+    public boolean isAvailable() { return isAvailable; }
+    public String getCategory() { return category; }
+    
+    public void setAvailable(boolean available) { isAvailable = available; }
+
+    @Override
+    public String toString() {
+        return id + " | " + title + " | " + author + " | " + category + 
+               " | " + (isAvailable ? "Available" : "Issued");
+    }
+}
+
+class Member {
+    private int id;
+    private String name;
+    private String email;
+    private List<Integer> issuedBooks;
+
+    public Member(int id, String name, String email) {
+        this.id = id;
+        this.name = name;
+        this.email = email;
+        this.issuedBooks = new ArrayList<>();
+    }
+
+    public int getId() { return id; }
+    public String getName() { return name; }
+    public String getEmail() { return email; }
+    public List<Integer> getIssuedBooks() { return issuedBooks; }
+
+    public boolean issueBook(int bookId) {
+        if(issuedBooks.size() < 3) { // Max 3 books per member
+            issuedBooks.add(bookId);
+            return true;
+        }
+        return false;
+    }
+
+    public boolean returnBook(int bookId) {
+        return issuedBooks.remove(Integer.valueOf(bookId));
+    }
+
+    @Override
+    public String toString() {
+        return id + " | " + name + " | " + email + " | Books issued: " + issuedBooks.size();
+    }
+}
+
+class Transaction {
+    private int transactionId;
+    private int bookId;
+    private int memberId;
+    private LocalDate issueDate;
+    private LocalDate returnDate;
+    private double fine;
+
+    public Transaction(int transactionId, int bookId, int memberId) {
+        this.transactionId = transactionId;
+        this.bookId = bookId;
+        this.memberId = memberId;
+        this.issueDate = LocalDate.now();
+        this.returnDate = null;
+        this.fine = 0.0;
+    }
+
+    public void calculateFine() {
+        if(returnDate == null) return;
+        
+        long daysLate = ChronoUnit.DAYS.between(issueDate.plusDays(14), returnDate);
+        if(daysLate > 0) {
+            fine = daysLate * 5.0; // ₹5 per day fine
+        }
+    }
+
+    public void setReturnDate(LocalDate date) { 
+        returnDate = date; 
+        calculateFine();
+    }
+
+    @Override
+    public String toString() {
+        return transactionId + " | Book: " + bookId + " | Member: " + memberId +
+               " | Issued: " + issueDate + " | Returned: " + 
+               (returnDate != null ? returnDate : "Not returned") +
+               " | Fine: ₹" + fine;
+    }
+}
+
+public class LibraryManagementSystem {
+    private Map<Integer, Book> books;
+    private Map<Integer, Member> members;
+    private List<Transaction> transactions;
+    private int bookIdCounter;
+    private int memberIdCounter;
+    private int transactionIdCounter;
+    private Scanner scanner;
+
+    public LibraryManagementSystem() {
+        books = new HashMap<>();
+        members = new HashMap<>();
+        transactions = new ArrayList<>();
+        bookIdCounter = 1;
+        memberIdCounter = 1;
+        transactionIdCounter = 1;
+        scanner = new Scanner(System.in);
+        
+        // Adding some sample data for testing
+        addSampleData();
+    }
+
+    private void addSampleData() {
+        // Adding some sample books
+        addBook("Java Programming", "James Gosling", "Programming");
+        addBook("Data Structures", "Mark Allen", "Computer Science");
+        addBook("Algorithms", "Thomas Cormen", "Computer Science");
+        
+        // Adding some sample members
+        registerMember("Rahul Sharma", "rahul@email.com");
+        registerMember("Priya Patel", "priya@email.com");
+    }
+
+    public void addBook(String title, String author, String category) {
+        Book book = new Book(bookIdCounter++, title, author, category);
+        books.put(book.getId(), book);
+        System.out.println("Book added successfully! ID: " + book.getId());
+    }
+
+    public void registerMember(String name, String email) {
+        Member member = new Member(memberIdCounter++, name, email);
+        members.put(member.getId(), member);
+        System.out.println("Member registered successfully! ID: " + member.getId());
+    }
+
+    public void issueBook() {
+        System.out.print("Enter Member ID: ");
+        int memberId = scanner.nextInt();
+        System.out.print("Enter Book ID: ");
+        int bookId = scanner.nextInt();
+        scanner.nextLine(); // consume newline
+
+        Member member = members.get(memberId);
+        Book book = books.get(bookId);
+
+        if(member == null || book == null) {
+            System.out.println("Invalid Member ID or Book ID!");
+            return;
+        }
+
+        if(!book.isAvailable()) {
+            System.out.println("Book is already issued!");
+            return;
+        }
+
+        if(!member.issueBook(bookId)) {
+            System.out.println("Member has reached maximum book limit (3 books)!");
+            return;
+        }
+
+        book.setAvailable(false);
+        Transaction transaction = new Transaction(transactionIdCounter++, bookId, memberId);
+        transactions.add(transaction);
+
+        System.out.println("Book issued successfully! Transaction ID: " + transactionIdCounter);
+    }
+
+    public void returnBook() {
+        System.out.print("Enter Book ID to return: ");
+        int bookId = scanner.nextInt();
+        scanner.nextLine(); // consume newline
+
+        Book book = books.get(bookId);
+        if(book == null) {
+            System.out.println("Invalid Book ID!");
+            return;
+        }
+
+        if(book.isAvailable()) {
+            System.out.println("This book is not issued to anyone!");
+            return;
+        }
+
+        // Find the member who has this book
+        for(Member member : members.values()) {
+            if(member.getIssuedBooks().contains(bookId)) {
+                member.returnBook(bookId);
+                book.setAvailable(true);
+                
+                // Update transaction
+                for(Transaction t : transactions) {
+                    if(t.toString().contains("Book: " + bookId) && t.toString().contains("Not returned")) {
+                        t.setReturnDate(LocalDate.now());
+                        System.out.println("Book returned successfully!");
+                        if(t.toString().contains("Fine: ₹0.0")) {
+                            System.out.println("No fine applicable.");
+                        } else {
+                            System.out.println("Fine amount: " + t.toString().split("Fine: ₹")[1]);
+                        }
+                        return;
+                    }
+                }
+            }
+        }
+
+        System.out.println("Could not process return. Please contact administrator.");
+    }
+
+    public void displayAllBooks() {
+        System.out.println("\n=== ALL BOOKS ===");
+        System.out.println("ID | Title | Author | Category | Status");
+        System.out.println("----------------------------------------");
+        for(Book book : books.values()) {
+            System.out.println(book);
+        }
+    }
+
+    public void displayAvailableBooks() {
+        System.out.println("\n=== AVAILABLE BOOKS ===");
+        System.out.println("ID | Title | Author | Category");
+        System.out.println("----------------------------");
+        for(Book book : books.values()) {
+            if(book.isAvailable()) {
+                System.out.println(book.getId() + " | " + book.getTitle() + " | " + 
+                                  book.getAuthor() + " | " + book.getCategory());
+            }
+        }
+    }
+
+    public void displayAllMembers() {
+        System.out.println("\n=== ALL MEMBERS ===");
+        System.out.println("ID | Name | Email | Books Issued");
+        System.out.println("--------------------------------");
+        for(Member member : members.values()) {
+            System.out.println(member);
+        }
+    }
+
+    public void displayTransactions() {
+        System.out.println("\n=== TRANSACTION HISTORY ===");
+        for(Transaction t : transactions) {
+            System.out.println(t);
+        }
+    }
+
+    public void searchBooks() {
+        System.out.print("Enter search term (title/author/category): ");
+        String searchTerm = scanner.nextLine().toLowerCase();
+
+        System.out.println("\n=== SEARCH RESULTS ===");
+        boolean found = false;
+        
+        for(Book book : books.values()) {
+            if(book.getTitle().toLowerCase().contains(searchTerm) ||
+               book.getAuthor().toLowerCase().contains(searchTerm) ||
+               book.getCategory().toLowerCase().contains(searchTerm)) {
+                System.out.println(book);
+                found = true;
+            }
+        }
+
+        if(!found) {
+            System.out.println("No books found matching your search.");
+        }
+    }
+
+    public void showMenu() {
+        while(true) {
+            System.out.println("\n=== LIBRARY MANAGEMENT SYSTEM ===");
+            System.out.println("1. Add Book");
+            System.out.println("2. Register Member");
+            System.out.println("3. Issue Book");
+            System.out.println("4. Return Book");
+            System.out.println("5. View All Books");
+            System.out.println("6. View Available Books");
+            System.out.println("7. View All Members");
+            System.out.println("8. View Transaction History");
+            System.out.println("9. Search Books");
+            System.out.println("10. Exit");
+            System.out.print("Choose an option: ");
+
+            int choice = scanner.nextInt();
+            scanner.nextLine(); // consume newline
+
+            switch(choice) {
+                case 1:
+                    System.out.print("Enter book title: ");
+                    String title = scanner.nextLine();
+                    System.out.print("Enter author: ");
+                    String author = scanner.nextLine();
+                    System.out.print("Enter category: ");
+                    String category = scanner.nextLine();
+                    addBook(title, author, category);
+                    break;
+                    
+                case 2:
+                    System.out.print("Enter member name: ");
+                    String name = scanner.nextLine();
+                    System.out.print("Enter email: ");
+                    String email = scanner.nextLine();
+                    registerMember(name, email);
+                    break;
+                    
+                case 3:
+                    issueBook();
+                    break;
+                    
+                case 4:
+                    returnBook();
+                    break;
+                    
+                case 5:
+                    displayAllBooks();
+                    break;
+                    
+                case 6:
+                    displayAvailableBooks();
+                    break;
+                    
+                case 7:
+                    displayAllMembers();
+                    break;
+                    
+                case 8:
+                    displayTransactions();
+                    break;
+                    
+                case 9:
+                    searchBooks();
+                    break;
+                    
+                case 10:
+                    System.out.println("Thank you for using Library Management System!");
+                    return;
+                    
+                default:
+                    System.out.println("Invalid choice! Please try again.");
+            }
+        }
+    }
+
+    public static void main(String[] args) {
+        LibraryManagementSystem library = new LibraryManagementSystem();
+        library.showMenu();
+    }
+}
