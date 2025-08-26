@@ -1,0 +1,136 @@
+import java.util.*;
+
+// Class for a Process/Job
+class Process {
+    int id;
+    int burstTime;
+    int arrivalTime;
+    int priority;
+
+    Process(int id, int burstTime, int arrivalTime, int priority) {
+        this.id = id;
+        this.burstTime = burstTime;
+        this.arrivalTime = arrivalTime;
+        this.priority = priority;
+    }
+}
+
+public class JobScheduler {
+
+    // First Come First Serve Scheduling
+    public static void FCFS(List<Process> processes) {
+        System.out.println("\n--- First Come First Serve (FCFS) Scheduling ---");
+        int time = 0;
+        for (Process p : processes) {
+            System.out.println("Process " + p.id + " started at " + time);
+            time += p.burstTime;
+            System.out.println("Process " + p.id + " finished at " + time);
+        }
+    }
+
+    // Shortest Job First (Non-preemptive)
+    public static void SJF(List<Process> processes) {
+        System.out.println("\n--- Shortest Job First (SJF) Scheduling ---");
+        List<Process> sorted = new ArrayList<>(processes);
+        sorted.sort(Comparator.comparingInt(p -> p.burstTime));
+        int time = 0;
+        for (Process p : sorted) {
+            System.out.println("Process " + p.id + " started at " + time);
+            time += p.burstTime;
+            System.out.println("Process " + p.id + " finished at " + time);
+        }
+    }
+
+    // Priority Scheduling (Non-preemptive)
+    public static void Priority(List<Process> processes) {
+        System.out.println("\n--- Priority Scheduling ---");
+        List<Process> sorted = new ArrayList<>(processes);
+        sorted.sort(Comparator.comparingInt(p -> p.priority));
+        int time = 0;
+        for (Process p : sorted) {
+            System.out.println("Process " + p.id + " (Priority " + p.priority + ") started at " + time);
+            time += p.burstTime;
+            System.out.println("Process " + p.id + " finished at " + time);
+        }
+    }
+
+    // Round Robin Scheduling
+    public static void RoundRobin(List<Process> processes, int quantum) {
+        System.out.println("\n--- Round Robin Scheduling (Quantum = " + quantum + ") ---");
+        Queue<Process> queue = new LinkedList<>(processes);
+        Map<Integer, Integer> remainingBurst = new HashMap<>();
+        for (Process p : processes) {
+            remainingBurst.put(p.id, p.burstTime);
+        }
+
+        int time = 0;
+        while (!queue.isEmpty()) {
+            Process current = queue.poll();
+            int rem = remainingBurst.get(current.id);
+
+            if (rem > quantum) {
+                System.out.println("Process " + current.id + " executed from " + time + " to " + (time + quantum));
+                time += quantum;
+                remainingBurst.put(current.id, rem - quantum);
+                queue.add(current); // Put back in queue
+            } else {
+                System.out.println("Process " + current.id + " executed from " + time + " to " + (time + rem));
+                time += rem;
+                remainingBurst.put(current.id, 0);
+            }
+        }
+    }
+
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        List<Process> processes = new ArrayList<>();
+
+        System.out.print("Enter number of Processes: ");
+        int n = sc.nextInt();
+
+        // Taking Job details from user
+        for (int i = 0; i < n; i++) {
+            System.out.println("Enter details for Process " + (i + 1));
+            System.out.print("Burst Time: ");
+            int bt = sc.nextInt();
+            System.out.print("Arrival Time: ");
+            int at = sc.nextInt();
+            System.out.print("Priority (lower = higher priority): ");
+            int pr = sc.nextInt();
+            processes.add(new Process(i + 1, bt, at, pr));
+        }
+
+        while (true) {
+            System.out.println("\n--- Job Scheduling Menu ---");
+            System.out.println("1. First Come First Serve (FCFS)");
+            System.out.println("2. Shortest Job First (SJF)");
+            System.out.println("3. Priority Scheduling");
+            System.out.println("4. Round Robin");
+            System.out.println("5. Exit");
+            System.out.print("Enter your choice: ");
+            int choice = sc.nextInt();
+
+            switch (choice) {
+                case 1:
+                    FCFS(processes);
+                    break;
+                case 2:
+                    SJF(processes);
+                    break;
+                case 3:
+                    Priority(processes);
+                    break;
+                case 4:
+                    System.out.print("Enter Time Quantum: ");
+                    int q = sc.nextInt();
+                    RoundRobin(processes, q);
+                    break;
+                case 5:
+                    System.out.println("Exiting...");
+                    return;
+                default:
+                    System.out.println("Invalid choice!");
+            }
+        }
+    }
+}
