@@ -1,0 +1,359 @@
+import java.util.*;
+import java.time.*;
+import java.io.*;
+
+/**
+ * Attendance Management System - Final Year Project
+ * This system helps teachers manage student attendance for different subjects.
+ * It's a console-based application with basic file storage.
+ */
+class Student {
+    private int rollNo;
+    private String name;
+    private String department;
+    private int semester;
+    
+    public Student(int rollNo, String name, String department, int semester) {
+        this.rollNo = rollNo;
+        this.name = name;
+        this.department = department;
+        this.semester = semester;
+    }
+    
+    // Getters
+    public int getRollNo() { return rollNo; }
+    public String getName() { return name; }
+    public String getDepartment() { return department; }
+    public int getSemester() { return semester; }
+    
+    @Override
+    public String toString() {
+        return rollNo + " | " + name + " | " + department + " | Sem " + semester;
+    }
+}
+
+class AttendanceRecord {
+    private int studentRollNo;
+    private String subject;
+    private LocalDate date;
+    private boolean isPresent;
+    
+    public AttendanceRecord(int studentRollNo, String subject, LocalDate date, boolean isPresent) {
+        this.studentRollNo = studentRollNo;
+        this.subject = subject;
+        this.date = date;
+        this.isPresent = isPresent;
+    }
+    
+    // Getters
+    public int getStudentRollNo() { return studentRollNo; }
+    public String getSubject() { return subject; }
+    public LocalDate getDate() { return date; }
+    public boolean isPresent() { return isPresent; }
+    
+    @Override
+    public String toString() {
+        return studentRollNo + " | " + subject + " | " + date + " | " + 
+               (isPresent ? "Present" : "Absent");
+    }
+}
+
+public class AttendanceManagementSystem {
+    private List<Student> students;
+    private List<AttendanceRecord> attendanceRecords;
+    private Scanner scanner;
+    private static final String STUDENT_FILE = "students.txt";
+    private static final String ATTENDANCE_FILE = "attendance.txt";
+    
+    public AttendanceManagementSystem() {
+        students = new ArrayList<>();
+        attendanceRecords = new ArrayList<>();
+        scanner = new Scanner(System.in);
+        
+        // Load existing data
+        loadStudentsFromFile();
+        loadAttendanceFromFile();
+        
+        // Add some sample data if files are empty
+        if(students.isEmpty()) {
+            addSampleStudents();
+        }
+    }
+    
+    private void addSampleStudents() {
+        students.add(new Student(101, "Amit Sharma", "IT", 6));
+        students.add(new Student(102, "Priya Patel", "IT", 6));
+        students.add(new Student(103, "Rahul Singh", "IT", 6));
+        students.add(new Student(104, "Neha Gupta", "IT", 6));
+        students.add(new Student(105, "Karan Malhotra", "IT", 6));
+        System.out.println("Added sample students for testing");
+    }
+    
+    private void loadStudentsFromFile() {
+        try (BufferedReader reader = new BufferedReader(new FileReader(STUDENT_FILE))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(",");
+                if(parts.length == 4) {
+                    int rollNo = Integer.parseInt(parts[0]);
+                    String name = parts[1];
+                    String dept = parts[2];
+                    int sem = Integer.parseInt(parts[3]);
+                    students.add(new Student(rollNo, name, dept, sem));
+                }
+            }
+        } catch (IOException e) {
+            // File doesn't exist yet, that's okay
+        }
+    }
+    
+    private void loadAttendanceFromFile() {
+        try (BufferedReader reader = new BufferedReader(new FileReader(ATTENDANCE_FILE))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(",");
+                if(parts.length == 4) {
+                    int rollNo = Integer.parseInt(parts[0]);
+                    String subject = parts[1];
+                    LocalDate date = LocalDate.parse(parts[2]);
+                    boolean present = Boolean.parseBoolean(parts[3]);
+                    attendanceRecords.add(new AttendanceRecord(rollNo, subject, date, present));
+                }
+            }
+        } catch (IOException e) {
+            // File doesn't exist yet, that's okay
+        }
+    }
+    
+    private void saveStudentsToFile() {
+        try (PrintWriter writer = new PrintWriter(new FileWriter(STUDENT_FILE))) {
+            for(Student student : students) {
+                writer.println(student.getRollNo() + "," + student.getName() + "," + 
+                              student.getDepartment() + "," + student.getSemester());
+            }
+        } catch (IOException e) {
+            System.out.println("Error saving students: " + e.getMessage());
+        }
+    }
+    
+    private void saveAttendanceToFile() {
+        try (PrintWriter writer = new PrintWriter(new FileWriter(ATTENDANCE_FILE))) {
+            for(AttendanceRecord record : attendanceRecords) {
+                writer.println(record.getStudentRollNo() + "," + record.getSubject() + "," + 
+                              record.getDate() + "," + record.isPresent());
+            }
+        } catch (IOException e) {
+            System.out.println("Error saving attendance: " + e.getMessage());
+        }
+    }
+    
+    public void addStudent() {
+        System.out.print("Enter roll number: ");
+        int rollNo = scanner.nextInt();
+        scanner.nextLine(); // consume newline
+        
+        // Check if roll number already exists
+        for(Student s : students) {
+            if(s.getRollNo() == rollNo) {
+                System.out.println("Student with this roll number already exists!");
+                return;
+            }
+        }
+        
+        System.out.print("Enter name: ");
+        String name = scanner.nextLine();
+        
+        System.out.print("Enter department: ");
+        String dept = scanner.nextLine();
+        
+        System.out.print("Enter semester: ");
+        int sem = scanner.nextInt();
+        scanner.nextLine(); // consume newline
+        
+        students.add(new Student(rollNo, name, dept, sem));
+        saveStudentsToFile();
+        System.out.println("Student added successfully!");
+    }
+    
+    public void markAttendance() {
+        if(students.isEmpty()) {
+            System.out.println("No students registered yet!");
+            return;
+        }
+        
+        System.out.print("Enter subject: ");
+        String subject = scanner.nextLine();
+        
+        LocalDate today = LocalDate.now();
+        System.out.println("Marking attendance for " + today + ", Subject: " + subject);
+        
+        for(Student student : students) {
+            System.out.print("Is " + student.getName() + " (Roll No: " + student.getRollNo() + ") present? (y/n): ");
+            String response = scanner.nextLine();
+            boolean present = response.equalsIgnoreCase("y");
+            
+            attendanceRecords.add(new AttendanceRecord(student.getRollNo(), subject, today, present));
+        }
+        
+        saveAttendanceToFile();
+        System.out.println("Attendance marked successfully!");
+    }
+    
+    public void viewStudentAttendance() {
+        System.out.print("Enter student roll number: ");
+        int rollNo = scanner.nextInt();
+        scanner.nextLine(); // consume newline
+        
+        System.out.print("Enter subject (or press enter for all subjects): ");
+        String subjectFilter = scanner.nextLine();
+        
+        System.out.print("Enter month (1-12) or 0 for all months: ");
+        int monthFilter = scanner.nextInt();
+        scanner.nextLine(); // consume newline
+        
+        System.out.println("\nAttendance records for Roll No: " + rollNo);
+        System.out.println("Date | Subject | Status");
+        System.out.println("-----------------------");
+        
+        int totalClasses = 0;
+        int presentCount = 0;
+        
+        for(AttendanceRecord record : attendanceRecords) {
+            if(record.getStudentRollNo() == rollNo) {
+                if(!subjectFilter.isEmpty() && !record.getSubject().equalsIgnoreCase(subjectFilter)) {
+                    continue;
+                }
+                
+                if(monthFilter > 0 && record.getDate().getMonthValue() != monthFilter) {
+                    continue;
+                }
+                
+                System.out.println(record.getDate() + " | " + record.getSubject() + " | " + 
+                                  (record.isPresent() ? "Present" : "Absent"));
+                
+                totalClasses++;
+                if(record.isPresent()) {
+                    presentCount++;
+                }
+            }
+        }
+        
+        if(totalClasses > 0) {
+            double percentage = (presentCount * 100.0) / totalClasses;
+            System.out.println("\nSummary: " + presentCount + "/" + totalClasses + 
+                              " classes attended (" + String.format("%.2f", percentage) + "%)");
+            
+            if(percentage < 75) {
+                System.out.println("WARNING: Attendance below 75%!");
+            }
+        } else {
+            System.out.println("No attendance records found for this student.");
+        }
+    }
+    
+    public void viewAllStudents() {
+        if(students.isEmpty()) {
+            System.out.println("No students registered yet!");
+            return;
+        }
+        
+        System.out.println("\nList of all students:");
+        System.out.println("Roll No | Name | Department | Semester");
+        System.out.println("--------------------------------------");
+        
+        for(Student student : students) {
+            System.out.println(student);
+        }
+    }
+    
+    public void generateMonthlyReport() {
+        System.out.print("Enter subject: ");
+        String subject = scanner.nextLine();
+        
+        System.out.print("Enter month (1-12): ");
+        int month = scanner.nextInt();
+        System.out.print("Enter year: ");
+        int year = scanner.nextInt();
+        scanner.nextLine(); // consume newline
+        
+        System.out.println("\nMonthly Attendance Report");
+        System.out.println("Subject: " + subject + ", Month: " + month + "/" + year);
+        System.out.println("Roll No | Name | Total Classes | Present | Percentage");
+        System.out.println("----------------------------------------------------");
+        
+        for(Student student : students) {
+            int totalClasses = 0;
+            int presentCount = 0;
+            
+            for(AttendanceRecord record : attendanceRecords) {
+                if(record.getStudentRollNo() == student.getRollNo() && 
+                   record.getSubject().equalsIgnoreCase(subject) &&
+                   record.getDate().getMonthValue() == month &&
+                   record.getDate().getYear() == year) {
+                    
+                    totalClasses++;
+                    if(record.isPresent()) {
+                        presentCount++;
+                    }
+                }
+            }
+            
+            double percentage = totalClasses > 0 ? (presentCount * 100.0) / totalClasses : 0;
+            System.out.println(student.getRollNo() + " | " + student.getName() + " | " + 
+                              totalClasses + " | " + presentCount + " | " + 
+                              String.format("%.2f", percentage) + "%");
+        }
+    }
+    
+    public void showMenu() {
+        while(true) {
+            System.out.println("\n=== ATTENDANCE MANAGEMENT SYSTEM ===");
+            System.out.println("1. Add Student");
+            System.out.println("2. Mark Attendance");
+            System.out.println("3. View Student Attendance");
+            System.out.println("4. View All Students");
+            System.out.println("5. Generate Monthly Report");
+            System.out.println("6. Exit");
+            System.out.print("Choose an option: ");
+            
+            int choice = scanner.nextInt();
+            scanner.nextLine(); // consume newline
+            
+            switch(choice) {
+                case 1:
+                    addStudent();
+                    break;
+                    
+                case 2:
+                    markAttendance();
+                    break;
+                    
+                case 3:
+                    viewStudentAttendance();
+                    break;
+                    
+                case 4:
+                    viewAllStudents();
+                    break;
+                    
+                case 5:
+                    generateMonthlyReport();
+                    break;
+                    
+                case 6:
+                    saveStudentsToFile();
+                    saveAttendanceToFile();
+                    System.out.println("Data saved. Thank you for using the system!");
+                    return;
+                    
+                default:
+                    System.out.println("Invalid choice! Please try again.");
+            }
+        }
+    }
+    
+    public static void main(String[] args) {
+        AttendanceManagementSystem system = new AttendanceManagementSystem();
+        system.showMenu();
+    }
+}
