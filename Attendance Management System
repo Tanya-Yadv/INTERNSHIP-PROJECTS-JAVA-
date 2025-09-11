@@ -81,11 +81,11 @@ public class AttendanceManagementSystem {
     }
     
     private void addSampleStudents() {
-        students.add(new Student(101, "Amit Sharma", "IT", 6));
-        students.add(new Student(102, "Priya Patel", "IT", 6));
-        students.add(new Student(103, "Rahul Singh", "IT", 6));
-        students.add(new Student(104, "Neha Gupta", "IT", 6));
-        students.add(new Student(105, "Karan Malhotra", "IT", 6));
+        students.add(new Student(101, "Dushyant Sambyal", "IT", 7));
+        students.add(new Student(102, "Mohit SuryaWanshi", "IT", 7));
+        students.add(new Student(103, "Jahaan Rohilla", "IT", 7));
+        students.add(new Student(104, "Adyay Singh Rajput", "IT", 7));
+        students.add(new Student(105, "Tanya Yadav", "IT", 7));
         System.out.println("Added sample students for testing");
     }
     
@@ -356,4 +356,4 @@ public class AttendanceManagementSystem {
         AttendanceManagementSystem system = new AttendanceManagementSystem();
         system.showMenu();
     }
-}
+} 
