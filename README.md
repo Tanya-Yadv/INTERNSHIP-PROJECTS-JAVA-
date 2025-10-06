@@ -1,5 +1,5 @@
 # INTERNSHIP-PROJECTS-JAVA-
-This repository contains Java projects:-
+This repository contains 4 Java projects:-
 > Airline Reservation System.
 > Attendance Management System
 > Job Schedular
